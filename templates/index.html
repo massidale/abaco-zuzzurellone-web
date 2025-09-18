@@ -1,0 +1,400 @@
+
+<!DOCTYPE html>
+<html lang="it" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abaco Zuzzurellone</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- Modal per parola personalizzata -->
+    <div class="modal fade" id="customWordModal" tabindex="-1" aria-labelledby="customWordModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customWordModalLabel">Imposta Parola Segreta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Inserisci una parola segreta per iniziare una nuova partita personalizzata.</p>
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="custom-word-input" placeholder="Inserisci la parola segreta..." autocomplete="off">
+                        <small class="text-muted mt-2 d-block">La parola deve essere presente nel vocabolario italiano.</small>
+                    </div>
+                    <div id="custom-word-error" class="alert alert-danger mt-3 d-none" role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-primary" id="confirm-custom-word">Inizia Partita</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container main-container">
+        <div class="row">
+            <!-- Colonna Principale del Gioco -->
+            <div class="col-lg-7">
+                <div class="game-card">
+                    <div class="card-header-custom">
+                        <h1>Abaco Zuzzurellone</h1>
+                        <p class="lead mb-0">Indovina la parola segreta!</p>
+                    </div>
+                    
+                    <div id="game-info" class="mb-4">
+                        <p>La parola si trova tra <strong id="parola-minima">{{ stato.parola_minima }}</strong> e <strong id="parola-massima">{{ stato.parola_massima }}</strong></p>
+                        <div class="text-start">
+                            <p class="text-muted mb-1">Tentativi: <strong id="numero-tentativi">{{ stato.numero_tentativi }}</strong></p>
+                            <p class="text-muted mb-0">Tempo: <strong id="timer">00:00</strong></p>
+                        </div>
+                    </div>
+
+                    <form id="guess-form" class="mb-3">
+                        <div class="input-group-custom">
+                            <input type="text" class="form-control-custom" id="parola-input" placeholder="Scrivi la tua parola..." required>
+                            <button type="submit" class="btn-custom">&rarr;</button>
+                        </div>
+                    </form>
+
+
+                    <div class="card-footer-custom">
+                        <div>
+                            <button id="restart-btn" class="btn btn-secondary">Nuova Partita</button>
+                            <button id="surrender-btn" class="btn btn-danger">Arrenditi</button>
+                            <div class="mt-2">
+                                <small><a href="#" id="custom-word-link" class="text-muted text-decoration-underline">Nuova partita con parola personalizzata</a></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Container messaggi fuori dal box -->
+                <div id="risultato-container" class="mt-3">
+                    <!-- I risultati verranno mostrati qui -->
+                </div>
+            </div>
+
+            <!-- Colonna Alfabeto Ausiliario -->
+            <div class="col-lg-5">
+                <div class="alphabet-card" id="alphabet-helper">
+                    <!-- L'alfabeto verrà generato qui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const guessForm = document.getElementById('guess-form');
+            const parolaInput = document.getElementById('parola-input');
+            const risultatoContainer = document.getElementById('risultato-container');
+            const parolaMinimaElem = document.getElementById('parola-minima');
+            const parolaMassimaElem = document.getElementById('parola-massima');
+            const numeroTentativiElem = document.getElementById('numero-tentativi');
+            const restartBtn = document.getElementById('restart-btn');
+            const surrenderBtn = document.getElementById('surrender-btn');
+            const customWordLink = document.getElementById('custom-word-link');
+            const alphabetHelper = document.getElementById('alphabet-helper');
+            const timerElem = document.getElementById('timer');
+            let timerInterval = null;
+
+            // --- Timer Functions ---
+            function formatTime(seconds) {
+                const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
+                return `${mins}:${secs}`;
+            }
+
+            function startTimer() {
+                if (timerInterval) clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    fetch('/status')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.game_over) {
+                            timerElem.textContent = formatTime(data.elapsed_time);
+                        } else {
+                            clearInterval(timerInterval);
+                        }
+                    });
+                }, 1000);
+            }
+
+            updateAlphabetHelper(parolaMinimaElem.textContent, parolaMassimaElem.textContent);
+            startTimer();
+
+            guessForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const parola = parolaInput.value.trim().toLowerCase();
+                if (parola) submitGuess(parola);
+            });
+
+            restartBtn.addEventListener('click', function() {
+                fetch('/restart', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert('Errore nel riavvio: ' + data.error);
+                        return;
+                    }
+                    updateGameState(data);
+                    displayResult('Nuova partita iniziata!', 'alert-info');
+                    parolaInput.value = '';
+                    parolaInput.disabled = false;
+                    guessForm.querySelector('button').disabled = false;
+                    surrenderBtn.disabled = false;
+                    updateAlphabetHelper(data.parola_minima, data.parola_massima);
+                    timerElem.textContent = '00:00';
+                    startTimer();
+                });
+            });
+
+            surrenderBtn.addEventListener('click', function() {
+                fetch('/surrender', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        displayResult(data.error, 'alert-danger');
+                        return;
+                    }
+                    displayResult(data.risultato, 'alert-warning');
+                    parolaInput.disabled = true;
+                    guessForm.querySelector('button').disabled = true;
+                    surrenderBtn.disabled = true;
+                    clearInterval(timerInterval);
+                });
+            });
+
+            const customWordModal = new bootstrap.Modal(document.getElementById('customWordModal'));
+            const customWordInput = document.getElementById('custom-word-input');
+            const confirmCustomWord = document.getElementById('confirm-custom-word');
+            const customWordError = document.getElementById('custom-word-error');
+
+            customWordLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                customWordInput.value = '';
+                customWordError.classList.add('d-none');
+                customWordModal.show();
+            });
+
+            confirmCustomWord.addEventListener('click', function() {
+                const customWord = customWordInput.value.trim();
+                if (!customWord) {
+                    customWordError.textContent = 'Per favore inserisci una parola.';
+                    customWordError.classList.remove('d-none');
+                    return;
+                }
+
+                if (customWord.toLowerCase() === 'abaco' || customWord.toLowerCase() === 'zuzzurellone') {
+                    customWordError.textContent = `La parola non può essere "${customWord}" (estremo del range).`;
+                    customWordError.classList.remove('d-none');
+                    return;
+                }
+
+                fetch('/set-custom-word', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ parola: customWord.toLowerCase() }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        customWordError.textContent = data.error;
+                        customWordError.classList.remove('d-none');
+                        return;
+                    }
+                    customWordModal.hide();
+                    updateGameState(data);
+                    displayResult('Nuova partita con parola personalizzata iniziata!', 'alert-info');
+                    parolaInput.value = '';
+                    parolaInput.disabled = false;
+                    guessForm.querySelector('button').disabled = false;
+                    surrenderBtn.disabled = false;
+                    updateAlphabetHelper(data.parola_minima, data.parola_massima);
+                    timerElem.textContent = '00:00';
+                    startTimer();
+                });
+            });
+
+            // Permetti di confermare con Enter nel modal
+            customWordInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    confirmCustomWord.click();
+                }
+            });
+
+            function submitGuess(parola) {
+                fetch('/guess', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ parola: parola }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        displayResult(data.error, 'alert-danger');
+                        return;
+                    }
+                    
+                    updateGameState(data);
+                    displayResult(data.risultato, getAlertClass(data.risultato));
+                    updateAlphabetHelper(data.parola_minima, data.parola_massima);
+
+                    if (data.game_over) {
+                        parolaInput.disabled = true;
+                        guessForm.querySelector('button').disabled = true;
+                        surrenderBtn.disabled = true;
+                        clearInterval(timerInterval);
+                    }
+                    parolaInput.value = '';
+                })
+                .catch(error => {
+                    console.error('Errore:', error);
+                    displayResult('Si è verificato un errore di comunicazione con il server.', 'alert-danger');
+                });
+            }
+
+            function updateGameState(data) {
+                parolaMinimaElem.textContent = data.parola_minima;
+                parolaMassimaElem.textContent = data.parola_massima;
+                numeroTentativiElem.textContent = data.numero_tentativi;
+            }
+
+            function displayResult(message, alertClass) {
+                risultatoContainer.innerHTML = `<div class="alert ${alertClass} mb-0" role="alert">${message}</div>`;
+                // Rimuovi automaticamente il messaggio dopo 10 secondi per messaggi non critici
+                if (!message.includes('indovinato') && !message.includes('arreso')) {
+                    setTimeout(() => {
+                        if (risultatoContainer.innerHTML.includes(message)) {
+                            risultatoContainer.innerHTML = '';
+                        }
+                    }, 10000);
+                }
+            }
+
+            function getAlertClass(risultato) {
+                if (risultato.includes('indovinato')) return 'alert-success';
+                if (risultato.includes('non è una parola valida') || risultato.includes('non è compresa')) return 'alert-warning';
+                if (risultato.includes('esaurito i tentativi') || risultato.includes('arreso')) return 'alert-danger';
+                return 'alert-info';
+            }
+
+            function updateAlphabetHelper(minWord, maxWord) {
+                console.log("Updating alphabet with:", minWord, maxWord);
+                const alphabetHelper = document.getElementById('alphabet-helper');
+                alphabetHelper.innerHTML = '';
+                let content = '<ul>';
+                content += `<li><strong class="word-bound">${minWord}</strong></li>`;
+
+                if (minWord === 'abaco' && maxWord === 'zuzzurellone') {
+                    for (let i = 'a'.charCodeAt(0); i <= 'z'.charCodeAt(0); i++) {
+                        content += `<li>  ${String.fromCharCode(i)}...</li>`;
+                    }
+                    content += `<li><strong class="word-bound">${maxWord}</strong></li>`;
+                    content += '</ul>';
+                    alphabetHelper.innerHTML = content;
+                    return;
+                }
+
+                if (!minWord || !maxWord || minWord === maxWord) {
+                    content += `<li><strong class="word-bound">${maxWord}</strong></li>`;
+                    content += '</ul>';
+                    alphabetHelper.innerHTML = content;
+                    return;
+                }
+
+                // Find LCP
+                let lcpLen = 0;
+                while (lcpLen < minWord.length && lcpLen < maxWord.length && minWord[lcpLen] === maxWord[lcpLen]) {
+                    lcpLen++;
+                }
+
+                let prefixes = [];
+                // --- Main Logic ---
+                if (lcpLen > 0) {
+                    const commonPrefix = minWord.substring(0, lcpLen);
+                    if (minWord.length === lcpLen) {
+                        // min_word is a prefix of max_word
+                        const startCharCode = 'a'.charCodeAt(0);
+                        const endCharCode = maxWord.charCodeAt(lcpLen);
+                        for (let code = startCharCode; code < endCharCode; code++) {
+                            prefixes.push(`${minWord}${String.fromCharCode(code)}...`);
+                        }
+                    } else {
+                        const startNextCharCode = (minWord.length > lcpLen) ? minWord.charCodeAt(lcpLen) : -1;
+                        const endNextCharCode = (maxWord.length > lcpLen) ? maxWord.charCodeAt(lcpLen) : -1;
+
+                        if (startNextCharCode !== -1 && endNextCharCode !== -1 && endNextCharCode === startNextCharCode + 1) {
+                            // Detailed view for adjacent prefixes
+                            const prefix1 = minWord.substring(0, lcpLen + 1);
+                            const startChar2Code = (minWord.length > lcpLen + 1) ? minWord.charCodeAt(lcpLen + 1) : 'a'.charCodeAt(0) - 1;
+                            for (let code2 = startChar2Code + 1; code2 <= 'z'.charCodeAt(0); code2++) {
+                                prefixes.push(`${prefix1}${String.fromCharCode(code2)}...`);
+                            }
+
+                            const prefix2 = maxWord.substring(0, lcpLen + 1);
+                            const endChar2Code = (maxWord.length > lcpLen + 1) ? maxWord.charCodeAt(lcpLen + 1) : 'z'.charCodeAt(0) + 1;
+                            for (let code2 = 'a'.charCodeAt(0); code2 < endChar2Code; code2++) {
+                                prefixes.push(`${prefix2}${String.fromCharCode(code2)}...`);
+                            }
+                        } else {
+                            // Original logic for non-adjacent prefixes
+                            for (let code = startNextCharCode; code <= endNextCharCode; code++) {
+                                prefixes.push(`${commonPrefix}${String.fromCharCode(code)}...`);
+                            }
+                        }
+                    }
+                } else {
+                    // Case 2: No common prefix
+                    const startCharOrd = minWord.charCodeAt(0);
+                    const endCharOrd = maxWord.charCodeAt(0);
+                    if (endCharOrd === startCharOrd + 1) {
+                        // Show detailed 2-letter prefixes
+                        for (let code1 = startCharOrd; code1 <= endCharOrd; code1++) {
+                            const letter1 = String.fromCharCode(code1);
+                            let startChar2 = 'a';
+                            if (code1 === startCharOrd && minWord.length > 1) {
+                                startChar2 = minWord[1];
+                            }
+                            let endChar2 = 'z';
+                            if (code1 === endCharOrd && maxWord.length > 1) {
+                                endChar2 = maxWord[1];
+                            }
+                            for (let code2 = startChar2.charCodeAt(0); code2 <= endChar2.charCodeAt(0); code2++) {
+                                const prefix = letter1 + String.fromCharCode(code2);
+                                const minPrefixBoundary = minWord.length >= 2 ? minWord.substring(0, 2) : minWord;
+                                const maxPrefixBoundary = maxWord.length >= 2 ? maxWord.substring(0, 2) : maxWord;
+                                if (minPrefixBoundary <= prefix && prefix <= maxPrefixBoundary) {
+                                    prefixes.push(`${prefix}...`);
+                                }
+                            }
+                        }
+                    } else {
+                        // Show simple 1-letter list
+                        for (let code = startCharOrd; code <= endCharOrd; code++) {
+                            prefixes.push(`${String.fromCharCode(code)}...`);
+                        }
+                    }
+                }
+
+                // Remove duplicates and limit to 30
+                const uniquePrefixes = [...new Set(prefixes)];
+                if (uniquePrefixes.length > 30) {
+                    content += '<li>...</li>';
+                } else {
+                    uniquePrefixes.forEach(p => {
+                        content += `<li>  ${p}</li>`;
+                    });
+                }
+
+                content += `<li><strong class="word-bound">${maxWord}</strong></li>`;
+                content += '</ul>';
+                alphabetHelper.innerHTML = content;
+            }
+        });
+    </script>
+</body>
+</html>

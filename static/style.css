@@ -1,0 +1,144 @@
+:root {
+    --bg-color: #f0f2f5;
+    --card-bg-color: #ffffff;
+    --border-color: #dee2e6;
+    --text-color: #212529;
+    --text-muted-color: #6c757d;
+    --accent-color: #007bff;
+    --accent-color-hover: #0056b3;
+    --danger-color: #dc3545;
+    --danger-color-hover: #c82333;
+}
+
+[data-bs-theme="dark"] {
+    --bg-color: #1a1a1a;
+    --card-bg-color: #2a2a2a;
+    --border-color: #444;
+    --text-color: #e0e0e0;
+    --text-muted-color: #888;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.main-container {
+    max-width: 900px;
+    margin: 3rem auto;
+}
+
+.game-card {
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    padding: 2rem;
+    min-height: 500px;
+    max-height: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.alphabet-card {
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 15px;
+    padding: 2rem;
+    min-height: 500px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.card-header-custom h1 {
+    font-family: 'Garamond', serif;
+    font-weight: bold;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.card-header-custom .lead {
+    color: var(--text-muted-color);
+}
+
+#game-info p {
+    margin-bottom: 0.5rem;
+}
+
+.input-group-custom {
+    display: flex;
+    border: 1px solid var(--border-color);
+    border-radius: 25px;
+    overflow: hidden;
+    background-color: var(--bg-color);
+}
+
+.form-control-custom {
+    flex-grow: 1;
+    background-color: transparent;
+    border: none;
+    color: var(--text-color);
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+}
+
+.form-control-custom:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.btn-custom {
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+
+.btn-custom:hover {
+    background-color: var(--accent-color-hover);
+}
+
+.card-footer-custom {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.card-footer-custom .btn {
+    border-radius: 20px;
+    margin: 0 5px;
+    padding: 0.5rem 1rem;
+}
+
+.alphabet-card ul {
+    list-style-type: none;
+    padding-left: 0;
+    font-family: "Courier New", monospace;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.alphabet-card li {
+    padding: 4px 10px;
+    color: var(--text-muted-color);
+}
+
+.word-bound {
+    color: var(--text-color);
+    font-weight: bold;
+}
+
+/* Container per i messaggi di feedback */
+#risultato-container {
+    margin-top: 1rem;
+}
+
+#risultato-container .alert {
+    font-size: 1.05rem;
+    margin-bottom: 0;
+    border: none;
+}
