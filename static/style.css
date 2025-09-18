@@ -97,6 +97,10 @@ body {
     line-height: 1;
     cursor: pointer;
     transition: background-color 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 50px;
 }
 
 .btn-custom:hover {
@@ -141,4 +145,32 @@ body {
     font-size: 1.05rem;
     margin-bottom: 0;
     border: none;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 576px) {
+    .main-container {
+        margin: 1rem auto;
+        padding: 0 1rem;
+    }
+
+    .game-card {
+        min-height: auto;
+        max-height: none;
+        padding: 1.5rem;
+    }
+
+    .card-header-custom h1 {
+        font-size: 2rem;
+    }
+
+    .btn-custom {
+        padding: 0.75rem 1rem;
+        min-width: 45px;
+    }
+
+    .form-control-custom {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
 }
