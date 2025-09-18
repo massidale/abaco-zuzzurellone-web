@@ -163,6 +163,134 @@ def surrender():
         'game_over': True
     })
 
+@app.route('/get-alphabet-prefixes', methods=['POST'])
+def get_alphabet_prefixes():
+    """Genera i prefissi filtrati per l'alfabeto ausiliario."""
+    try:
+        data = request.get_json()
+        min_word = data.get('min_word', '').lower()
+        max_word = data.get('max_word', '').lower()
+
+        if not min_word or not max_word:
+            return jsonify({'prefixes': []})
+
+        # Genera prefissi intelligenti basati sul vocabolario
+        prefixes = genera_prefissi_filtrati(min_word, max_word, vocabolario)
+
+        return jsonify({'prefixes': prefixes})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def genera_prefissi_filtrati(min_word, max_word, vocab):
+    """Genera prefissi con la logica originale ma filtrati per esistenza nel vocabolario."""
+
+    # Se sono le parole iniziali/finali, mostra l'alfabeto completo
+    if min_word == 'abaco' and max_word == 'zuzzurellone':
+        return [f'{letter}...' for letter in 'abcdefghijklmnopqrstuvwxyz']
+
+    # Prima genera i prefissi candidati con la logica originale
+    candidate_prefixes = []
+
+    # Trova il prefisso comune più lungo
+    lcp_len = 0
+    while lcp_len < len(min_word) and lcp_len < len(max_word) and min_word[lcp_len] == max_word[lcp_len]:
+        lcp_len += 1
+
+    if lcp_len > 0:
+        # Ha prefisso comune
+        common_prefix = min_word[:lcp_len]
+
+        if len(min_word) == lcp_len:
+            # min_word è prefisso di max_word
+            for c in range(ord('a'), ord(max_word[lcp_len])):
+                candidate_prefixes.append(min_word + chr(c))
+        else:
+            start_char = ord(min_word[lcp_len])
+            end_char = ord(max_word[lcp_len])
+
+            if end_char == start_char + 1:
+                # Caratteri adiacenti dopo prefisso comune
+                # Prima variante
+                prefix1 = common_prefix + chr(start_char)
+                start_char2 = ord(min_word[lcp_len + 1]) if len(min_word) > lcp_len + 1 else ord('a')
+                for c2 in range(start_char2, ord('z') + 1):
+                    candidate_prefixes.append(prefix1 + chr(c2))
+
+                # Seconda variante
+                prefix2 = common_prefix + chr(end_char)
+                end_char2 = ord(max_word[lcp_len + 1]) if len(max_word) > lcp_len + 1 else ord('z')
+                for c2 in range(ord('a'), end_char2 + 1):
+                    candidate_prefixes.append(prefix2 + chr(c2))
+            else:
+                # Caratteri non adiacenti
+                for c in range(start_char, end_char + 1):
+                    candidate_prefixes.append(common_prefix + chr(c))
+    else:
+        # Nessun prefisso comune
+        start_char = ord(min_word[0])
+        end_char = ord(max_word[0])
+
+        if end_char == start_char + 1:
+            # Lettere adiacenti (es. e-f)
+            # Prima lettera
+            first_letter = chr(start_char)
+            start_second = ord(min_word[1]) if len(min_word) > 1 else ord('a')
+            for c2 in range(start_second, ord('z') + 1):
+                candidate_prefixes.append(first_letter + chr(c2))
+
+            # Seconda lettera
+            second_letter = chr(end_char)
+            end_second = ord(max_word[1]) if len(max_word) > 1 else ord('z')
+            for c2 in range(ord('a'), end_second + 1):
+                candidate_prefixes.append(second_letter + chr(c2))
+        else:
+            # Lettere non adiacenti
+            for c in range(start_char, end_char + 1):
+                candidate_prefixes.append(chr(c))
+
+    # Ora filtra: mantieni solo i prefissi che hanno almeno una parola nel vocabolario
+    # Per efficienza, crea un set delle parole nel range
+    words_in_range = {w for w in vocab if min_word <= w <= max_word}
+
+    # Funzione helper per filtrare i prefissi
+    def filter_prefixes(prefixes_to_check):
+        valid = []
+        for prefix in sorted(set(prefixes_to_check)):
+            # Controlla se esiste almeno una parola che inizia con questo prefisso
+            has_word = any(word.startswith(prefix) for word in words_in_range)
+            if has_word:
+                valid.append(prefix)
+        return valid
+
+    # Prima prova con i prefissi candidati originali
+    valid_prefixes = filter_prefixes(candidate_prefixes)
+
+    # Se ci sono solo 2 o meno prefissi validi (tipicamente gli estremi),
+    # espandi automaticamente di una lettera
+    current_prefixes = valid_prefixes if valid_prefixes else candidate_prefixes
+    expansion_level = 0
+    max_expansions = 2  # Massimo 2 livelli di espansione (es. da 2 a 3 a 4 lettere)
+
+    while len(valid_prefixes) <= 2 and expansion_level < max_expansions:
+        longer_candidates = []
+        for prefix in set(current_prefixes):
+            for c in 'abcdefghijklmnopqrstuvwxyz':
+                longer_candidates.append(prefix + c)
+
+        # Filtra i nuovi prefissi più lunghi
+        valid_prefixes = filter_prefixes(longer_candidates)
+
+        # Se abbiamo trovato abbastanza prefissi o siamo al limite, fermati
+        if len(valid_prefixes) > 2:
+            break
+
+        current_prefixes = longer_candidates if longer_candidates else current_prefixes
+        expansion_level += 1
+
+    # Formatta i prefissi per la visualizzazione
+    return [f'{p}...' for p in valid_prefixes]
+
 @app.route('/set-custom-word', methods=['POST'])
 def set_custom_word():
     """Imposta una parola segreta personalizzata scelta dall'utente."""

@@ -285,128 +285,43 @@
             function updateAlphabetHelper(minWord, maxWord) {
                 console.log("Updating alphabet with:", minWord, maxWord);
                 const alphabetHelper = document.getElementById('alphabet-helper');
-                alphabetHelper.innerHTML = '';
-                let content = '<ul>';
-                content += `<li><strong class="word-bound">${minWord}</strong></li>`;
 
-                if (minWord === 'abaco' && maxWord === 'zuzzurellone') {
-                    for (let i = 'a'.charCodeAt(0); i <= 'z'.charCodeAt(0); i++) {
-                        content += `<li>  ${String.fromCharCode(i)}...</li>`;
+                if (!alphabetHelper) return; // Se non c'è l'alfabeto (mobile), esci
+
+                // Chiama l'API per ottenere i prefissi filtrati
+                fetch('/get-alphabet-prefixes', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ min_word: minWord, max_word: maxWord })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    let content = '<ul>';
+                    content += `<li><strong class="word-bound">${minWord}</strong></li>`;
+
+                    if (data.prefixes && data.prefixes.length > 0) {
+                        data.prefixes.forEach(prefix => {
+                            content += `<li>  ${prefix}</li>`;
+                        });
+                    } else if (minWord !== maxWord) {
+                        // Se non ci sono prefissi ma le parole sono diverse, mostra almeno qualcosa
+                        content += '<li>  ...</li>';
                     }
+
                     content += `<li><strong class="word-bound">${maxWord}</strong></li>`;
                     content += '</ul>';
                     alphabetHelper.innerHTML = content;
-                    return;
-                }
-
-                if (!minWord || !maxWord || minWord === maxWord) {
+                })
+                .catch(error => {
+                    console.error('Errore nel caricamento dei prefissi:', error);
+                    // In caso di errore, mostra solo le parole limite
+                    let content = '<ul>';
+                    content += `<li><strong class="word-bound">${minWord}</strong></li>`;
+                    content += '<li>  ...</li>';
                     content += `<li><strong class="word-bound">${maxWord}</strong></li>`;
                     content += '</ul>';
                     alphabetHelper.innerHTML = content;
-                    return;
-                }
-
-                // Find LCP
-                let lcpLen = 0;
-                while (lcpLen < minWord.length && lcpLen < maxWord.length && minWord[lcpLen] === maxWord[lcpLen]) {
-                    lcpLen++;
-                }
-
-                let prefixes = [];
-                // --- Main Logic ---
-                if (lcpLen > 0) {
-                    const commonPrefix = minWord.substring(0, lcpLen);
-                    if (minWord.length === lcpLen) {
-                        // min_word is a prefix of max_word
-                        const startCharCode = 'a'.charCodeAt(0);
-                        const endCharCode = maxWord.charCodeAt(lcpLen);
-                        for (let code = startCharCode; code < endCharCode; code++) {
-                            prefixes.push(`${minWord}${String.fromCharCode(code)}...`);
-                        }
-                    } else {
-                        const startNextCharCode = (minWord.length > lcpLen) ? minWord.charCodeAt(lcpLen) : -1;
-                        const endNextCharCode = (maxWord.length > lcpLen) ? maxWord.charCodeAt(lcpLen) : -1;
-
-                        if (startNextCharCode !== -1 && endNextCharCode !== -1 && endNextCharCode === startNextCharCode + 1) {
-                            // Detailed view for adjacent prefixes - show second letter breakdown
-                            // For the first prefix (e.g., "e" in "elmo")
-                            const prefix1 = commonPrefix + String.fromCharCode(startNextCharCode);
-                            const startChar2Code = (minWord.length > lcpLen + 1) ? minWord.charCodeAt(lcpLen + 1) : 'a'.charCodeAt(0);
-
-                            // Add all suffixes from the starting point to 'z' for the first prefix
-                            for (let code2 = startChar2Code; code2 <= 'z'.charCodeAt(0); code2++) {
-                                prefixes.push(`${prefix1}${String.fromCharCode(code2)}...`);
-                            }
-
-                            // For the second prefix (e.g., "f" in "fulmine")
-                            const prefix2 = commonPrefix + String.fromCharCode(endNextCharCode);
-                            const endChar2Code = (maxWord.length > lcpLen + 1) ? maxWord.charCodeAt(lcpLen + 1) : 'z'.charCodeAt(0);
-
-                            // Add all suffixes from 'a' to the ending point for the second prefix
-                            for (let code2 = 'a'.charCodeAt(0); code2 <= endChar2Code; code2++) {
-                                prefixes.push(`${prefix2}${String.fromCharCode(code2)}...`);
-                            }
-                        } else {
-                            // Original logic for non-adjacent prefixes
-                            for (let code = startNextCharCode; code <= endNextCharCode; code++) {
-                                prefixes.push(`${commonPrefix}${String.fromCharCode(code)}...`);
-                            }
-                        }
-                    }
-                } else {
-                    // Case 2: No common prefix
-                    const startCharOrd = minWord.charCodeAt(0);
-                    const endCharOrd = maxWord.charCodeAt(0);
-                    if (endCharOrd === startCharOrd + 1) {
-                        // Adjacent first letters (e.g., 'e' and 'f' for elmo-fulmine)
-                        // For first letter (e.g., 'e' from 'elmo')
-                        const firstLetter = String.fromCharCode(startCharOrd);
-                        const startSecondChar = minWord.length > 1 ? minWord.charCodeAt(1) : 'a'.charCodeAt(0);
-
-                        // Add all combinations from el... to ez...
-                        for (let code2 = startSecondChar; code2 <= 'z'.charCodeAt(0); code2++) {
-                            prefixes.push(`${firstLetter}${String.fromCharCode(code2)}...`);
-                        }
-
-                        // For second letter (e.g., 'f' from 'fulmine')
-                        const secondLetter = String.fromCharCode(endCharOrd);
-                        const endSecondChar = maxWord.length > 1 ? maxWord.charCodeAt(1) : 'z'.charCodeAt(0);
-
-                        // Add all combinations from fa... to fu...
-                        for (let code2 = 'a'.charCodeAt(0); code2 <= endSecondChar; code2++) {
-                            prefixes.push(`${secondLetter}${String.fromCharCode(code2)}...`);
-                        }
-                    } else {
-                        // Show simple 1-letter list
-                        for (let code = startCharOrd; code <= endCharOrd; code++) {
-                            prefixes.push(`${String.fromCharCode(code)}...`);
-                        }
-                    }
-                }
-
-                // Remove duplicates
-                const uniquePrefixes = [...new Set(prefixes)];
-
-                // Show all prefixes (or limit if too many, but 36 is reasonable)
-                if (uniquePrefixes.length > 50) {
-                    // Only show ellipsis if really too many
-                    uniquePrefixes.slice(0, 25).forEach(p => {
-                        content += `<li>  ${p}</li>`;
-                    });
-                    content += '<li>...</li>';
-                    uniquePrefixes.slice(-25).forEach(p => {
-                        content += `<li>  ${p}</li>`;
-                    });
-                } else {
-                    // Show all prefixes if reasonable number
-                    uniquePrefixes.forEach(p => {
-                        content += `<li>  ${p}</li>`;
-                    });
-                }
-
-                content += `<li><strong class="word-bound">${maxWord}</strong></li>`;
-                content += '</ul>';
-                alphabetHelper.innerHTML = content;
+                });
             }
         });
     </script>
