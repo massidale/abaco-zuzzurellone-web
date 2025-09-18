@@ -147,6 +147,80 @@ body {
     border: none;
 }
 
+/* Custom modal styling to match game design */
+.modal-content {
+    background-color: var(--card-bg-color);
+    border-radius: 15px;
+    border: 1px solid var(--border-color);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.5rem;
+}
+
+.modal-title {
+    font-family: 'Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: bold;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
+}
+
+#custom-word-input {
+    border-radius: 25px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    width: 100%;
+}
+
+#custom-word-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    border-color: var(--accent-color);
+}
+
+.modal-footer .btn {
+    border-radius: 20px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+}
+
+.modal-footer .btn-secondary {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+}
+
+.modal-footer .btn-secondary:hover {
+    background-color: var(--bg-color);
+    border-color: var(--text-muted-color);
+}
+
+.modal-footer .btn-primary {
+    background-color: var(--accent-color);
+    border: none;
+}
+
+.modal-footer .btn-primary:hover {
+    background-color: var(--accent-color-hover);
+}
+
+#custom-word-error {
+    border-radius: 10px;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 576px) {
     .main-container {

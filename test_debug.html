@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Test</title>
+</head>
+<body>
+    <h1>Test Debug Alfabeto</h1>
+    <button onclick="test()">Test elmo-fulmine</button>
+    <pre id="output"></pre>
+
+    <script>
+        function test() {
+            const minWord = 'elmo';
+            const maxWord = 'fulmine';
+            const output = document.getElementById('output');
+
+            let log = '';
+            log += `Min: ${minWord}, Max: ${maxWord}\n`;
+
+            // Find LCP
+            let lcpLen = 0;
+            while (lcpLen < minWord.length && lcpLen < maxWord.length && minWord[lcpLen] === maxWord[lcpLen]) {
+                lcpLen++;
+            }
+
+            log += `LCP length: ${lcpLen}\n`;
+            log += `Common prefix: "${minWord.substring(0, lcpLen)}"\n`;
+
+            if (lcpLen === 0) {
+                log += "No common prefix case\n";
+                const startCharOrd = minWord.charCodeAt(0);
+                const endCharOrd = maxWord.charCodeAt(0);
+                log += `Start char: ${String.fromCharCode(startCharOrd)} (${startCharOrd})\n`;
+                log += `End char: ${String.fromCharCode(endCharOrd)} (${endCharOrd})\n`;
+                log += `Adjacent? ${endCharOrd === startCharOrd + 1}\n`;
+
+                if (endCharOrd === startCharOrd + 1) {
+                    log += "Adjacent letters detected!\n";
+
+                    const prefixes = [];
+
+                    // For first letter
+                    const firstLetter = String.fromCharCode(startCharOrd);
+                    const startSecondChar = minWord.length > 1 ? minWord.charCodeAt(1) : 'a'.charCodeAt(0);
+                    log += `For '${firstLetter}': starting from '${String.fromCharCode(startSecondChar)}'\n`;
+
+                    for (let code2 = startSecondChar; code2 <= 'z'.charCodeAt(0); code2++) {
+                        prefixes.push(`${firstLetter}${String.fromCharCode(code2)}...`);
+                    }
+
+                    // For second letter
+                    const secondLetter = String.fromCharCode(endCharOrd);
+                    const endSecondChar = maxWord.length > 1 ? maxWord.charCodeAt(1) : 'z'.charCodeAt(0);
+                    log += `For '${secondLetter}': ending at '${String.fromCharCode(endSecondChar)}'\n`;
+
+                    for (let code2 = 'a'.charCodeAt(0); code2 <= endSecondChar; code2++) {
+                        prefixes.push(`${secondLetter}${String.fromCharCode(code2)}...`);
+                    }
+
+                    log += `\nGenerated ${prefixes.length} prefixes:\n`;
+                    const uniquePrefixes = [...new Set(prefixes)].sort();
+                    uniquePrefixes.forEach(p => {
+                        log += `  ${p}\n`;
+                    });
+                }
+            } else {
+                log += "Has common prefix\n";
+            }
+
+            output.textContent = log;
+        }
+    </script>
+</body>
+</html>

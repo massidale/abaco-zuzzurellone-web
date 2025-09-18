@@ -328,16 +328,22 @@
                         const endNextCharCode = (maxWord.length > lcpLen) ? maxWord.charCodeAt(lcpLen) : -1;
 
                         if (startNextCharCode !== -1 && endNextCharCode !== -1 && endNextCharCode === startNextCharCode + 1) {
-                            // Detailed view for adjacent prefixes
-                            const prefix1 = minWord.substring(0, lcpLen + 1);
-                            const startChar2Code = (minWord.length > lcpLen + 1) ? minWord.charCodeAt(lcpLen + 1) : 'a'.charCodeAt(0) - 1;
-                            for (let code2 = startChar2Code + 1; code2 <= 'z'.charCodeAt(0); code2++) {
+                            // Detailed view for adjacent prefixes - show second letter breakdown
+                            // For the first prefix (e.g., "e" in "elmo")
+                            const prefix1 = commonPrefix + String.fromCharCode(startNextCharCode);
+                            const startChar2Code = (minWord.length > lcpLen + 1) ? minWord.charCodeAt(lcpLen + 1) : 'a'.charCodeAt(0);
+
+                            // Add all suffixes from the starting point to 'z' for the first prefix
+                            for (let code2 = startChar2Code; code2 <= 'z'.charCodeAt(0); code2++) {
                                 prefixes.push(`${prefix1}${String.fromCharCode(code2)}...`);
                             }
 
-                            const prefix2 = maxWord.substring(0, lcpLen + 1);
-                            const endChar2Code = (maxWord.length > lcpLen + 1) ? maxWord.charCodeAt(lcpLen + 1) : 'z'.charCodeAt(0) + 1;
-                            for (let code2 = 'a'.charCodeAt(0); code2 < endChar2Code; code2++) {
+                            // For the second prefix (e.g., "f" in "fulmine")
+                            const prefix2 = commonPrefix + String.fromCharCode(endNextCharCode);
+                            const endChar2Code = (maxWord.length > lcpLen + 1) ? maxWord.charCodeAt(lcpLen + 1) : 'z'.charCodeAt(0);
+
+                            // Add all suffixes from 'a' to the ending point for the second prefix
+                            for (let code2 = 'a'.charCodeAt(0); code2 <= endChar2Code; code2++) {
                                 prefixes.push(`${prefix2}${String.fromCharCode(code2)}...`);
                             }
                         } else {
@@ -352,25 +358,23 @@
                     const startCharOrd = minWord.charCodeAt(0);
                     const endCharOrd = maxWord.charCodeAt(0);
                     if (endCharOrd === startCharOrd + 1) {
-                        // Show detailed 2-letter prefixes
-                        for (let code1 = startCharOrd; code1 <= endCharOrd; code1++) {
-                            const letter1 = String.fromCharCode(code1);
-                            let startChar2 = 'a';
-                            if (code1 === startCharOrd && minWord.length > 1) {
-                                startChar2 = minWord[1];
-                            }
-                            let endChar2 = 'z';
-                            if (code1 === endCharOrd && maxWord.length > 1) {
-                                endChar2 = maxWord[1];
-                            }
-                            for (let code2 = startChar2.charCodeAt(0); code2 <= endChar2.charCodeAt(0); code2++) {
-                                const prefix = letter1 + String.fromCharCode(code2);
-                                const minPrefixBoundary = minWord.length >= 2 ? minWord.substring(0, 2) : minWord;
-                                const maxPrefixBoundary = maxWord.length >= 2 ? maxWord.substring(0, 2) : maxWord;
-                                if (minPrefixBoundary <= prefix && prefix <= maxPrefixBoundary) {
-                                    prefixes.push(`${prefix}...`);
-                                }
-                            }
+                        // Adjacent first letters (e.g., 'e' and 'f' for elmo-fulmine)
+                        // For first letter (e.g., 'e' from 'elmo')
+                        const firstLetter = String.fromCharCode(startCharOrd);
+                        const startSecondChar = minWord.length > 1 ? minWord.charCodeAt(1) : 'a'.charCodeAt(0);
+
+                        // Add all combinations from el... to ez...
+                        for (let code2 = startSecondChar; code2 <= 'z'.charCodeAt(0); code2++) {
+                            prefixes.push(`${firstLetter}${String.fromCharCode(code2)}...`);
+                        }
+
+                        // For second letter (e.g., 'f' from 'fulmine')
+                        const secondLetter = String.fromCharCode(endCharOrd);
+                        const endSecondChar = maxWord.length > 1 ? maxWord.charCodeAt(1) : 'z'.charCodeAt(0);
+
+                        // Add all combinations from fa... to fu...
+                        for (let code2 = 'a'.charCodeAt(0); code2 <= endSecondChar; code2++) {
+                            prefixes.push(`${secondLetter}${String.fromCharCode(code2)}...`);
                         }
                     } else {
                         // Show simple 1-letter list
@@ -380,11 +384,21 @@
                     }
                 }
 
-                // Remove duplicates and limit to 30
+                // Remove duplicates
                 const uniquePrefixes = [...new Set(prefixes)];
-                if (uniquePrefixes.length > 30) {
+
+                // Show all prefixes (or limit if too many, but 36 is reasonable)
+                if (uniquePrefixes.length > 50) {
+                    // Only show ellipsis if really too many
+                    uniquePrefixes.slice(0, 25).forEach(p => {
+                        content += `<li>  ${p}</li>`;
+                    });
                     content += '<li>...</li>';
+                    uniquePrefixes.slice(-25).forEach(p => {
+                        content += `<li>  ${p}</li>`;
+                    });
                 } else {
+                    // Show all prefixes if reasonable number
                     uniquePrefixes.forEach(p => {
                         content += `<li>  ${p}</li>`;
                     });

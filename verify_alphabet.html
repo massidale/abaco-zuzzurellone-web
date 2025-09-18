@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Verifica Alfabeto</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .test { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .pass { background: #d4edda; }
+        .fail { background: #f8d7da; }
+        ul { list-style: none; padding-left: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Test Alfabeto Ausiliario - elmo → fulmine</h1>
+
+    <div id="test1" class="test">
+        <h3>Test 1: Logica Base</h3>
+        <div id="result1"></div>
+    </div>
+
+    <div id="test2" class="test">
+        <h3>Test 2: Alfabeto Generato</h3>
+        <div id="alphabet-helper"></div>
+    </div>
+
+    <script>
+        // Test 1: Basic logic test
+        function testBasicLogic() {
+            const minWord = 'elmo';
+            const maxWord = 'fulmine';
+
+            let lcpLen = 0;
+            while (lcpLen < minWord.length && lcpLen < maxWord.length && minWord[lcpLen] === maxWord[lcpLen]) {
+                lcpLen++;
+            }
+
+            const startCharOrd = minWord.charCodeAt(0);
+            const endCharOrd = maxWord.charCodeAt(0);
+            const isAdjacent = (endCharOrd === startCharOrd + 1);
+
+            const result1 = document.getElementById('result1');
+            result1.innerHTML = `
+                <p>Min: ${minWord}, Max: ${maxWord}</p>
+                <p>LCP Length: ${lcpLen} (expected: 0)</p>
+                <p>First char min: '${String.fromCharCode(startCharOrd)}' (${startCharOrd})</p>
+                <p>First char max: '${String.fromCharCode(endCharOrd)}' (${endCharOrd})</p>
+                <p>Are adjacent? ${isAdjacent} (expected: true)</p>
+                <p>Test: ${(lcpLen === 0 && isAdjacent) ? '✅ PASS' : '❌ FAIL'}</p>
+            `;
+
+            document.getElementById('test1').className = 'test ' + ((lcpLen === 0 && isAdjacent) ? 'pass' : 'fail');
+        }
+
+        // Test 2: Full alphabet generation (copy from actual app)
+        function updateAlphabetHelper(minWord, maxWord) {
+            console.log("Updating alphabet with:", minWord, maxWord);
+            const alphabetHelper = document.getElementById('alphabet-helper');
+            alphabetHelper.innerHTML = '';
+            let content = '<ul>';
+            content += `<li><strong>${minWord}</strong></li>`;
+
+            if (!minWord || !maxWord || minWord === maxWord) {
+                content += `<li><strong>${maxWord}</strong></li>`;
+                content += '</ul>';
+                alphabetHelper.innerHTML = content;
+                return;
+            }
+
+            // Find LCP
+            let lcpLen = 0;
+            while (lcpLen < minWord.length && lcpLen < maxWord.length && minWord[lcpLen] === maxWord[lcpLen]) {
+                lcpLen++;
+            }
+
+            let prefixes = [];
+
+            if (lcpLen > 0) {
+                console.log("Has common prefix - THIS SHOULD NOT HAPPEN FOR elmo-fulmine");
+                // Common prefix logic...
+            } else {
+                // Case 2: No common prefix
+                const startCharOrd = minWord.charCodeAt(0);
+                const endCharOrd = maxWord.charCodeAt(0);
+                console.log(`No common prefix. Start: ${String.fromCharCode(startCharOrd)}, End: ${String.fromCharCode(endCharOrd)}`);
+
+                if (endCharOrd === startCharOrd + 1) {
+                    console.log("Adjacent first letters detected!");
+                    // Adjacent first letters (e.g., 'e' and 'f' for elmo-fulmine)
+                    // For first letter (e.g., 'e' from 'elmo')
+                    const firstLetter = String.fromCharCode(startCharOrd);
+                    const startSecondChar = minWord.length > 1 ? minWord.charCodeAt(1) : 'a'.charCodeAt(0);
+
+                    console.log(`Generating for '${firstLetter}' starting from '${String.fromCharCode(startSecondChar)}'`);
+                    // Add all combinations from el... to ez...
+                    for (let code2 = startSecondChar; code2 <= 'z'.charCodeAt(0); code2++) {
+                        prefixes.push(`${firstLetter}${String.fromCharCode(code2)}...`);
+                    }
+
+                    // For second letter (e.g., 'f' from 'fulmine')
+                    const secondLetter = String.fromCharCode(endCharOrd);
+                    const endSecondChar = maxWord.length > 1 ? maxWord.charCodeAt(1) : 'z'.charCodeAt(0);
+
+                    console.log(`Generating for '${secondLetter}' ending at '${String.fromCharCode(endSecondChar)}'`);
+                    // Add all combinations from fa... to fu...
+                    for (let code2 = 'a'.charCodeAt(0); code2 <= endSecondChar; code2++) {
+                        prefixes.push(`${secondLetter}${String.fromCharCode(code2)}...`);
+                    }
+
+                    console.log(`Total prefixes generated: ${prefixes.length}`);
+                } else {
+                    console.log("Not adjacent - simple list");
+                    // Show simple 1-letter list
+                    for (let code = startCharOrd; code <= endCharOrd; code++) {
+                        prefixes.push(`${String.fromCharCode(code)}...`);
+                    }
+                }
+            }
+
+            // Remove duplicates
+            const uniquePrefixes = [...new Set(prefixes)];
+            console.log(`Unique prefixes: ${uniquePrefixes.length}`);
+
+            uniquePrefixes.forEach(p => {
+                content += `<li>  ${p}</li>`;
+            });
+
+            content += `<li><strong>${maxWord}</strong></li>`;
+            content += '</ul>';
+            alphabetHelper.innerHTML = content;
+
+            // Check if we have the expected prefixes
+            const hasEl = prefixes.includes('el...');
+            const hasEz = prefixes.includes('ez...');
+            const hasFa = prefixes.includes('fa...');
+            const hasFu = prefixes.includes('fu...');
+
+            if (hasEl && hasEz && hasFa && hasFu) {
+                document.getElementById('test2').className = 'test pass';
+                console.log('✅ All expected prefixes found!');
+            } else {
+                document.getElementById('test2').className = 'test fail';
+                console.log('❌ Missing expected prefixes!');
+                console.log('Has el...?', hasEl);
+                console.log('Has ez...?', hasEz);
+                console.log('Has fa...?', hasFa);
+                console.log('Has fu...?', hasFu);
+            }
+        }
+
+        // Run tests
+        testBasicLogic();
+        updateAlphabetHelper('elmo', 'fulmine');
+    </script>
+</body>
+</html>

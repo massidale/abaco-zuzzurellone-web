@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Alfabeto</title>
+</head>
+<body>
+    <h1>Test Alfabeto Ausiliario</h1>
+    <div>
+        <label>Parola Minima: <input id="minWord" type="text" value="elmo"></label><br>
+        <label>Parola Massima: <input id="maxWord" type="text" value="fulmine"></label><br>
+        <button onclick="updateAlphabet()">Aggiorna</button>
+    </div>
+    <div id="result" style="margin-top: 20px; font-family: monospace;"></div>
+
+    <script>
+        function updateAlphabet() {
+            const minWord = document.getElementById('minWord').value;
+            const maxWord = document.getElementById('maxWord').value;
+            updateAlphabetHelper(minWord, maxWord);
+        }
+
+        function updateAlphabetHelper(minWord, maxWord) {
+            console.log("Updating alphabet with:", minWord, maxWord);
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+            let content = '<ul>';
+            content += `<li><strong>${minWord}</strong></li>`;
+
+            if (minWord === 'abaco' && maxWord === 'zuzzurellone') {
+                for (let i = 'a'.charCodeAt(0); i <= 'z'.charCodeAt(0); i++) {
+                    content += `<li>  ${String.fromCharCode(i)}...</li>`;
+                }
+                content += `<li><strong>${maxWord}</strong></li>`;
+                content += '</ul>';
+                resultDiv.innerHTML = content;
+                return;
+            }
+
+            if (!minWord || !maxWord || minWord === maxWord) {
+                content += `<li><strong>${maxWord}</strong></li>`;
+                content += '</ul>';
+                resultDiv.innerHTML = content;
+                return;
+            }
+
+            // Find LCP (Longest Common Prefix)
+            let lcpLen = 0;
+            while (lcpLen < minWord.length && lcpLen < maxWord.length && minWord[lcpLen] === maxWord[lcpLen]) {
+                lcpLen++;
+            }
+
+            console.log("LCP length:", lcpLen);
+            console.log("Common prefix:", minWord.substring(0, lcpLen));
+
+            let prefixes = [];
+
+            // No common prefix case
+            if (lcpLen === 0) {
+                const startCharOrd = minWord.charCodeAt(0);
+                const endCharOrd = maxWord.charCodeAt(0);
+                console.log("No common prefix. Start char:", String.fromCharCode(startCharOrd), "End char:", String.fromCharCode(endCharOrd));
+
+                if (endCharOrd === startCharOrd + 1) {
+                    // Adjacent first letters (e.g., 'e' and 'f')
+                    console.log("Adjacent first letters detected");
+
+                    // For first letter (e.g., 'e' from 'elmo')
+                    const firstLetter = String.fromCharCode(startCharOrd);
+                    const startSecondChar = minWord.length > 1 ? minWord.charCodeAt(1) : 'a'.charCodeAt(0);
+
+                    // Add all combinations from el... to ez...
+                    for (let code2 = startSecondChar; code2 <= 'z'.charCodeAt(0); code2++) {
+                        prefixes.push(`${firstLetter}${String.fromCharCode(code2)}...`);
+                    }
+
+                    // For second letter (e.g., 'f' from 'fulmine')
+                    const secondLetter = String.fromCharCode(endCharOrd);
+                    const endSecondChar = maxWord.length > 1 ? maxWord.charCodeAt(1) : 'z'.charCodeAt(0);
+
+                    // Add all combinations from fa... to fu...
+                    for (let code2 = 'a'.charCodeAt(0); code2 <= endSecondChar; code2++) {
+                        prefixes.push(`${secondLetter}${String.fromCharCode(code2)}...`);
+                    }
+                } else {
+                    // Non-adjacent first letters
+                    for (let code = startCharOrd; code <= endCharOrd; code++) {
+                        prefixes.push(`${String.fromCharCode(code)}...`);
+                    }
+                }
+            } else {
+                // Has common prefix
+                const commonPrefix = minWord.substring(0, lcpLen);
+
+                if (minWord.length === lcpLen) {
+                    // minWord is a prefix of maxWord
+                    const startCharCode = 'a'.charCodeAt(0);
+                    const endCharCode = maxWord.charCodeAt(lcpLen);
+                    for (let code = startCharCode; code < endCharCode; code++) {
+                        prefixes.push(`${minWord}${String.fromCharCode(code)}...`);
+                    }
+                } else {
+                    const startNextCharCode = minWord.charCodeAt(lcpLen);
+                    const endNextCharCode = maxWord.charCodeAt(lcpLen);
+
+                    if (endNextCharCode === startNextCharCode + 1) {
+                        // Adjacent characters after common prefix
+                        console.log("Adjacent chars after common prefix");
+
+                        // For first character after common prefix
+                        const prefix1 = commonPrefix + String.fromCharCode(startNextCharCode);
+                        const startChar2Code = (minWord.length > lcpLen + 1) ? minWord.charCodeAt(lcpLen + 1) : 'a'.charCodeAt(0);
+
+                        for (let code2 = startChar2Code; code2 <= 'z'.charCodeAt(0); code2++) {
+                            prefixes.push(`${prefix1}${String.fromCharCode(code2)}...`);
+                        }
+
+                        // For second character after common prefix
+                        const prefix2 = commonPrefix + String.fromCharCode(endNextCharCode);
+                        const endChar2Code = (maxWord.length > lcpLen + 1) ? maxWord.charCodeAt(lcpLen + 1) : 'z'.charCodeAt(0);
+
+                        for (let code2 = 'a'.charCodeAt(0); code2 <= endChar2Code; code2++) {
+                            prefixes.push(`${prefix2}${String.fromCharCode(code2)}...`);
+                        }
+                    } else {
+                        // Non-adjacent characters after common prefix
+                        for (let code = startNextCharCode; code <= endNextCharCode; code++) {
+                            prefixes.push(`${commonPrefix}${String.fromCharCode(code)}...`);
+                        }
+                    }
+                }
+            }
+
+            // Remove duplicates
+            const uniquePrefixes = [...new Set(prefixes)];
+            console.log("Generated prefixes:", uniquePrefixes);
+
+            if (uniquePrefixes.length > 30) {
+                content += '<li>...</li>';
+            } else {
+                uniquePrefixes.forEach(p => {
+                    content += `<li>  ${p}</li>`;
+                });
+            }
+
+            content += `<li><strong>${maxWord}</strong></li>`;
+            content += '</ul>';
+            resultDiv.innerHTML = content;
+        }
+
+        // Initial load
+        updateAlphabet();
+    </script>
+</body>
+</html>
