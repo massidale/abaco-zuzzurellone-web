@@ -148,6 +148,60 @@ def status():
         return jsonify({'elapsed_time': elapsed_time, 'game_over': False})
     return jsonify({'elapsed_time': 0, 'game_over': True})
 
+@app.route('/hint', methods=['POST'])
+def hint():
+    """Fornisce un indizio basato sul prefisso comune tra i due estremi."""
+    game = get_game()
+    if game.game_over:
+        return jsonify({'error': 'La partita è già terminata.'}), 400
+
+    # Prendi i due estremi attuali
+    min_word = game.parola_minima
+    max_word = game.parola_massima
+    parola_segreta = game.parola_segreta
+
+    # Trova il prefisso comune tra i due estremi
+    lcp_len = 0
+    while (lcp_len < len(min_word) and
+           lcp_len < len(max_word) and
+           min_word[lcp_len] == max_word[lcp_len]):
+        lcp_len += 1
+
+    # Determina quale lettera rivelare basandosi sul prefisso comune
+    if lcp_len < len(parola_segreta):
+        lettera_da_rivelare = parola_segreta[lcp_len]
+        posizione = lcp_len + 1
+
+        # Aggiorna il range basandosi sulla lettera rivelata
+        nuovo_prefisso = parola_segreta[:lcp_len + 1]
+
+        # Trova le parole nel vocabolario che iniziano con questo prefisso
+        parole_con_prefisso = [w for w in vocabolario if w.startswith(nuovo_prefisso)]
+
+        if parole_con_prefisso:
+            # Trova la parola minima e massima che inizia con questo prefisso
+            # e che è ancora nel range corrente
+            nuova_minima = max(game.parola_minima, min(parole_con_prefisso))
+            nuova_massima = min(game.parola_massima, max(parole_con_prefisso))
+
+            # Aggiorna il range del gioco
+            game.parola_minima = nuova_minima
+            game.parola_massima = nuova_massima
+            save_game(game)
+    else:
+        return jsonify({'error': 'Non ci sono più lettere da rivelare!'}), 400
+
+    # Formatta il messaggio senza apici e con lettera in bold (HTML)
+    messaggio = f"La {posizione}ª lettera è: &nbsp;&nbsp;<strong>{lettera_da_rivelare}</strong>"
+
+    return jsonify({
+        'messaggio': messaggio,
+        'prefisso_rivelato': nuovo_prefisso,
+        'parola_minima': game.parola_minima,
+        'parola_massima': game.parola_massima,
+        'numero_tentativi': game.numero_tentativi
+    })
+
 @app.route('/surrender', methods=['POST'])
 def surrender():
     """L'utente si arrende e il gioco finisce."""
@@ -313,9 +367,6 @@ def set_custom_word():
 
         if parola_personalizzata not in vocabolario:
             return jsonify({'error': f'"{parola_personalizzata}" non è una parola valida nel vocabolario.'}), 400
-
-        if parola_personalizzata == 'abaco' or parola_personalizzata == 'zuzzurellone':
-            return jsonify({'error': f'La parola non può essere "{parola_personalizzata}" (estremo del range).'}), 400
 
         # Crea una nuova partita con la parola personalizzata
         session.clear()

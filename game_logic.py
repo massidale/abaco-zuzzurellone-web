@@ -67,8 +67,8 @@ class AbacoGame:
         if parola not in self.vocabolario:
             return f"'{parola}' non è una parola valida nel vocabolario."
 
-        if not (self.parola_minima < parola < self.parola_massima):
-            return f"'{parola}' non è compresa tra '{self.parola_minima}' e '{self.parola_massima}'."
+        if not (self.parola_minima <= parola <= self.parola_massima):
+            return f"'{parola}' non è compresa tra '{self.parola_minima}' e '{self.parola_massima}' (estremi inclusi)."
 
         # Incrementa il numero di tentativi solo se la parola è valida e nel range
         self.numero_tentativi += 1

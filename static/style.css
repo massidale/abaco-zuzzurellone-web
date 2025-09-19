@@ -48,6 +48,31 @@ body {
     padding: 2rem;
     min-height: 500px;
     max-height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.prefix-section {
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.prefix-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-color);
+    margin: 0;
+    font-family: "Courier New", monospace;
+}
+
+.divider-line {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 1rem 0;
+}
+
+#alphabet-helper {
+    flex: 1;
     overflow-y: auto;
 }
 
@@ -109,13 +134,29 @@ body {
 
 .card-footer-custom {
     margin-top: 2rem;
-    text-align: center;
 }
 
 .card-footer-custom .btn {
     border-radius: 20px;
     margin: 0 5px;
     padding: 0.5rem 1rem;
+}
+
+.btn-game {
+    padding: 0.6rem 2rem !important;
+    font-weight: 500;
+}
+
+#hint-btn {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white !important;
+}
+
+#hint-btn:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+    color: white !important;
 }
 
 .alphabet-card ul {

@@ -42,7 +42,7 @@
                         <h1>Abaco Zuzzurellone</h1>
                         <p class="lead mb-0">Indovina la parola segreta!</p>
                     </div>
-                    
+
                     <div id="game-info" class="mb-4">
                         <p>La parola si trova tra <strong id="parola-minima">{{ stato.parola_minima }}</strong> e <strong id="parola-massima">{{ stato.parola_massima }}</strong></p>
                         <div class="text-start">
@@ -60,9 +60,12 @@
 
 
                     <div class="card-footer-custom">
-                        <div>
-                            <button id="restart-btn" class="btn btn-secondary">Nuova Partita</button>
-                            <button id="surrender-btn" class="btn btn-danger">Arrenditi</button>
+                        <div class="text-center">
+                            <button id="hint-btn" class="btn btn-info btn-game">Indizio</button>
+                            <button id="surrender-btn" class="btn btn-danger btn-game">Arrenditi</button>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button id="restart-btn" class="btn btn-secondary btn-game">Nuova Partita</button>
                             <div class="mt-2">
                                 <small><a href="#" id="custom-word-link" class="text-muted text-decoration-underline">Nuova partita con parola personalizzata</a></small>
                             </div>
@@ -78,8 +81,14 @@
 
             <!-- Colonna Alfabeto Ausiliario -->
             <div class="col-lg-5 d-none d-lg-block">
-                <div class="alphabet-card" id="alphabet-helper">
-                    <!-- L'alfabeto verrà generato qui -->
+                <div class="alphabet-card">
+                    <div id="prefix-display" class="prefix-section">
+                        <p id="prefix-text" class="prefix-value">-</p>
+                    </div>
+                    <hr class="divider-line">
+                    <div id="alphabet-helper">
+                        <!-- L'alfabeto verrà generato qui -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -96,10 +105,13 @@
             const numeroTentativiElem = document.getElementById('numero-tentativi');
             const restartBtn = document.getElementById('restart-btn');
             const surrenderBtn = document.getElementById('surrender-btn');
+            const hintBtn = document.getElementById('hint-btn');
             const customWordLink = document.getElementById('custom-word-link');
             const alphabetHelper = document.getElementById('alphabet-helper');
             const timerElem = document.getElementById('timer');
+            const prefixText = document.getElementById('prefix-text');
             let timerInterval = null;
+            let currentHintPrefix = '';
 
             // --- Timer Functions ---
             function formatTime(seconds) {
@@ -146,9 +158,38 @@
                     parolaInput.disabled = false;
                     guessForm.querySelector('button').disabled = false;
                     surrenderBtn.disabled = false;
+                    hintBtn.disabled = false;
+                    currentHintPrefix = ''; // Reset hint prefix
                     updateAlphabetHelper(data.parola_minima, data.parola_massima);
                     timerElem.textContent = '00:00';
                     startTimer();
+                });
+            });
+
+            hintBtn.addEventListener('click', function() {
+                fetch('/hint', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        displayResult(data.error, 'alert-danger');
+                        return;
+                    }
+                    displayResult(data.messaggio, 'alert-info');
+
+                    // Aggiorna il prefisso rivelato
+                    if (data.prefisso_rivelato) {
+                        currentHintPrefix = data.prefisso_rivelato;
+                        updateCommonPrefix(data.parola_minima, data.parola_massima);
+                    }
+
+                    // Aggiorna il range del gioco
+                    if (data.parola_minima && data.parola_massima) {
+                        parolaMinimaElem.textContent = data.parola_minima;
+                        parolaMassimaElem.textContent = data.parola_massima;
+                        numeroTentativiElem.textContent = data.numero_tentativi;
+                        // Aggiorna l'alfabeto ausiliario con il nuovo range
+                        updateAlphabetHelper(data.parola_minima, data.parola_massima);
+                    }
                 });
             });
 
@@ -164,6 +205,7 @@
                     parolaInput.disabled = true;
                     guessForm.querySelector('button').disabled = true;
                     surrenderBtn.disabled = true;
+                    hintBtn.disabled = true;
                     clearInterval(timerInterval);
                 });
             });
@@ -188,12 +230,6 @@
                     return;
                 }
 
-                if (customWord.toLowerCase() === 'abaco' || customWord.toLowerCase() === 'zuzzurellone') {
-                    customWordError.textContent = `La parola non può essere "${customWord}" (estremo del range).`;
-                    customWordError.classList.remove('d-none');
-                    return;
-                }
-
                 fetch('/set-custom-word', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -213,6 +249,8 @@
                     parolaInput.disabled = false;
                     guessForm.querySelector('button').disabled = false;
                     surrenderBtn.disabled = false;
+                    hintBtn.disabled = false;
+                    currentHintPrefix = ''; // Reset hint prefix
                     updateAlphabetHelper(data.parola_minima, data.parola_massima);
                     timerElem.textContent = '00:00';
                     startTimer();
@@ -288,6 +326,9 @@
 
                 if (!alphabetHelper) return; // Se non c'è l'alfabeto (mobile), esci
 
+                // Calcola e mostra il prefisso comune
+                updateCommonPrefix(minWord, maxWord);
+
                 // Chiama l'API per ottenere i prefissi filtrati
                 fetch('/get-alphabet-prefixes', {
                     method: 'POST',
@@ -322,6 +363,32 @@
                     content += '</ul>';
                     alphabetHelper.innerHTML = content;
                 });
+            }
+
+            function updateCommonPrefix(minWord, maxWord) {
+                if (!prefixText) return;
+
+                // Calcola il prefisso comune
+                let lcpLen = 0;
+                while (lcpLen < minWord.length && lcpLen < maxWord.length && minWord[lcpLen] === maxWord[lcpLen]) {
+                    lcpLen++;
+                }
+
+                if (lcpLen > 0) {
+                    // Combina il prefisso comune con eventuali lettere rivelate dall'indizio
+                    let prefix = minWord.substring(0, lcpLen);
+                    if (currentHintPrefix && currentHintPrefix.length > prefix.length) {
+                        prefix = currentHintPrefix;
+                    }
+                    prefixText.textContent = prefix + '...';
+                } else {
+                    // Reset if no common prefix (unless we have a hint)
+                    if (currentHintPrefix) {
+                        prefixText.textContent = currentHintPrefix + '...';
+                    } else {
+                        prefixText.textContent = '-';
+                    }
+                }
             }
         });
     </script>
