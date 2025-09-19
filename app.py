@@ -249,22 +249,26 @@ def genera_prefissi_filtrati(min_word, max_word, vocab):
             for c in range(start_char, end_char + 1):
                 candidate_prefixes.append(chr(c))
 
-    # Ora filtra: mantieni solo i prefissi che hanno almeno una parola nel vocabolario
-    # Per efficienza, crea un set delle parole nel range
-    words_in_range = {w for w in vocab if min_word <= w <= max_word}
+    # Se i prefissi sono di una sola lettera, non filtrare (sono sempre validi)
+    if candidate_prefixes and len(candidate_prefixes[0]) == 1:
+        valid_prefixes = candidate_prefixes
+    else:
+        # Ora filtra: mantieni solo i prefissi che hanno almeno una parola nel vocabolario
+        # Per efficienza, crea un set delle parole nel range
+        words_in_range = {w for w in vocab if min_word <= w <= max_word}
 
-    # Funzione helper per filtrare i prefissi
-    def filter_prefixes(prefixes_to_check):
-        valid = []
-        for prefix in sorted(set(prefixes_to_check)):
-            # Controlla se esiste almeno una parola che inizia con questo prefisso
-            has_word = any(word.startswith(prefix) for word in words_in_range)
-            if has_word:
-                valid.append(prefix)
-        return valid
+        # Funzione helper per filtrare i prefissi
+        def filter_prefixes(prefixes_to_check):
+            valid = []
+            for prefix in sorted(set(prefixes_to_check)):
+                # Controlla se esiste almeno una parola che inizia con questo prefisso
+                has_word = any(word.startswith(prefix) for word in words_in_range)
+                if has_word:
+                    valid.append(prefix)
+            return valid
 
-    # Prima prova con i prefissi candidati originali
-    valid_prefixes = filter_prefixes(candidate_prefixes)
+        # Prima prova con i prefissi candidati originali
+        valid_prefixes = filter_prefixes(candidate_prefixes)
 
     # Se ci sono solo 2 o meno prefissi validi (tipicamente gli estremi),
     # espandi automaticamente di una lettera
@@ -272,21 +276,27 @@ def genera_prefissi_filtrati(min_word, max_word, vocab):
     expansion_level = 0
     max_expansions = 2  # Massimo 2 livelli di espansione (es. da 2 a 3 a 4 lettere)
 
-    while len(valid_prefixes) <= 2 and expansion_level < max_expansions:
-        longer_candidates = []
-        for prefix in set(current_prefixes):
-            for c in 'abcdefghijklmnopqrstuvwxyz':
-                longer_candidates.append(prefix + c)
+    # Solo se non siamo già a prefissi di una lettera
+    if not (valid_prefixes and len(valid_prefixes[0]) == 1):
+        while len(valid_prefixes) <= 2 and expansion_level < max_expansions:
+            longer_candidates = []
+            for prefix in set(current_prefixes):
+                for c in 'abcdefghijklmnopqrstuvwxyz':
+                    longer_candidates.append(prefix + c)
 
-        # Filtra i nuovi prefissi più lunghi
-        valid_prefixes = filter_prefixes(longer_candidates)
+            # Filtra i nuovi prefissi più lunghi
+            if 'filter_prefixes' in locals():
+                valid_prefixes = filter_prefixes(longer_candidates)
+            else:
+                # Se siamo arrivati qui da prefissi di 1 lettera, non filtrare
+                valid_prefixes = longer_candidates
 
-        # Se abbiamo trovato abbastanza prefissi o siamo al limite, fermati
-        if len(valid_prefixes) > 2:
-            break
+            # Se abbiamo trovato abbastanza prefissi o siamo al limite, fermati
+            if len(valid_prefixes) > 2:
+                break
 
-        current_prefixes = longer_candidates if longer_candidates else current_prefixes
-        expansion_level += 1
+            current_prefixes = longer_candidates if longer_candidates else current_prefixes
+            expansion_level += 1
 
     # Formatta i prefissi per la visualizzazione
     return [f'{p}...' for p in valid_prefixes]
