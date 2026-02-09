@@ -26,7 +26,4 @@ L'obiettivo è indovinare una **parola segreta** scelta dal sistema, restringend
 5.  Computer: "La parola è compresa tra **Mare** e **Topo**".
 6.  ...e così via fino alla vittoria.
 
----
-
-## 🧠 Strategia
-Il gioco applica la logica della **Ricerca Binaria**. Per vincere in meno mosse, cerca di scegliere parole che "tagliano a metà" l'intervallo corrente (es. se sei tra A e Z, prova una parola con la M).
+(Da [Wikipedia]([https://abaco-zuzzurellone-web.onrender.com/](https://it.wikipedia.org/wiki/Abaco_zuzzurellone))
