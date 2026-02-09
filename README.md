@@ -26,4 +26,4 @@ L'obiettivo è indovinare una **parola segreta** scelta dal sistema, restringend
 5.  Computer: "La parola è compresa tra **Mare** e **Topo**".
 6.  ...e così via fino alla vittoria.
 
-(Da [Wikipedia]([https://abaco-zuzzurellone-web.onrender.com/](https://it.wikipedia.org/wiki/Abaco_zuzzurellone))
+(Da [Wikipedia]([https://abaco-zuzzurellone-web.onrender.com/](https://it.wikipedia.org/wiki/Abaco_zuzzurellone)))
